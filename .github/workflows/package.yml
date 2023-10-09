@@ -1,0 +1,49 @@
+name: Package
+on:
+  push:
+  pull_request:
+jobs:
+  find-folders:
+    name: Find Folders
+    runs-on: ubuntu-latest
+    outputs:
+      folders: ${{ steps.matrix.outputs.value }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Collect Folders
+        id: matrix
+        run: |
+          ignore_folders=(".github" ".git")
+          let i=1
+          declare -a dirs
+          for d in */
+          do
+              dir="${d%/}"
+              if [[ ${ignore_folders[@]} =~ $dir ]]
+              then
+                echo "ignoring $dir"
+              else
+                echo "collecting $dir"
+                dirs[i++]="${d%/}"
+              fi
+          done
+          arr=$(jq --compact-output --null-input '$ARGS.positional' --args -- "${dirs[@]}")
+          echo "value=$arr" >> $GITHUB_OUTPUT
+
+        
+  package:
+    name: Package Folders
+    needs: [find-folders]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        folder: ${{ fromJson(needs.find-folders.outputs.folders) }}  
+    steps:
+      - uses: actions/checkout@v3
+      - name: Pack Upload ${{ matrix.folder }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.folder }}.zip
+          path: |
+            ${{ matrix.folder }}
+          retention-days: 90
