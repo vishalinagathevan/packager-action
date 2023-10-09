@@ -18,7 +18,9 @@ jobs:
           declare -a dirs
           for d in */
           do
+              echo "d"
               dir="${d%/}"
+              echo "dir"
               if [[ ${ignore_folders[@]} =~ $dir ]]
               then
                 echo "ignoring $dir"
